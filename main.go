@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -38,12 +39,29 @@ func homePage(http.ResponseWriter, *http.Request) {
 	fmt.Println("Home page Handler")
 
 }
-func getTasks(http.ResponseWriter, *http.Request) {
+func getTasks(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Home page Handler")
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(tasks)
 
 }
-func getTask(http.ResponseWriter, *http.Request) {
+func getTask(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Home page Handler")
+
+	taskId := mux.Vars(r)["id"]
+	flag := false
+
+	for _, task := range tasks {
+		if task.ID == taskId {
+			json.NewEncoder(w).Encode(task)
+			flag = true
+			break
+		}
+	}
+
+	if flag == false {
+		json.NewEncoder(w).Encode(map[string]string{"status": "Error"})
+	}
 
 }
 func createTask(http.ResponseWriter, *http.Request) {
@@ -69,6 +87,7 @@ func handleRoutes() {
 	log.Fatal(http.ListenAndServe(":8082", router))
 }
 func main() {
+	allTasks()
 	handleRoutes()
 	fmt.Println("Hello Fluter task Manager Crud")
 }
