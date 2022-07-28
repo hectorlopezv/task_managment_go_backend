@@ -80,8 +80,26 @@ func createTask(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(tasks)
 
 }
-func deleteTask(http.ResponseWriter, *http.Request) {
+
+func deleteTask(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Home page Handler")
+	w.Header().Set("Content-Type", "application/json")
+
+	id := mux.Vars(r)["id"]
+
+	flag := false
+	for index, item := range tasks {
+		if item.ID == id {
+			tasks = append(tasks[:index], tasks[index+1:]...)
+			print(tasks)
+			json.NewEncoder(w).Encode(tasks)
+			flag = true
+			return
+		}
+	}
+	if !flag {
+		json.NewEncoder(w).Encode(map[string]string{"status": "Error"})
+	}
 
 }
 func updateTask(w http.ResponseWriter, r *http.Request) {
@@ -118,8 +136,6 @@ func handleRoutes() {
 	router.HandleFunc("/update/{id}", updateTask).Methods("POST")
 	log.Fatal(http.ListenAndServe(":8082", router))
 }
-
-
 
 func main() {
 	allTasks()
