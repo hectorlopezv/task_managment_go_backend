@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
+	"time"
 
 	"github.com/gorilla/mux"
 )
@@ -26,7 +28,6 @@ func allTasks() {
 		Date:       "2020-01-01",
 	}
 	tasks = append(tasks, task)
-	fmt.Println("your task are ", tasks)
 	task2 := Tasks{
 		ID:         "2",
 		TaskName:   "Task 2",
@@ -34,6 +35,8 @@ func allTasks() {
 		Date:       "2020-01-02",
 	}
 	tasks = append(tasks, task2)
+	fmt.Println("your task are ", tasks)
+
 }
 func homePage(http.ResponseWriter, *http.Request) {
 	fmt.Println("Home page Handler")
@@ -59,33 +62,65 @@ func getTask(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if flag == false {
+	if !flag {
 		json.NewEncoder(w).Encode(map[string]string{"status": "Error"})
 	}
 
 }
-func createTask(http.ResponseWriter, *http.Request) {
+func createTask(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
 	fmt.Println("Home page Handler")
+	var task Tasks
+
+	json.NewDecoder(r.Body).Decode(&task)
+	task.ID = strconv.Itoa(len(tasks) + 1)
+	task.Date = time.Now().Format("01-02-2006")
+	tasks = append(tasks, task)
+	print(tasks)
+	json.NewEncoder(w).Encode(tasks)
 
 }
 func deleteTask(http.ResponseWriter, *http.Request) {
 	fmt.Println("Home page Handler")
 
 }
-func updateTask(http.ResponseWriter, *http.Request) {
+func updateTask(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Home page Handler")
+	w.Header().Set("Content-Type", "application/json")
+	var task Tasks
+	json.NewDecoder(r.Body).Decode(&task)
+	task.Date = time.Now().Format("01-02-2006")
+	task.ID = mux.Vars(r)["id"]
+
+	flag := false
+	for index, item := range tasks {
+		if item.ID == task.ID {
+			tasks = append(tasks[:index], tasks[index+1:]...)
+			tasks = append(tasks, task)
+			print(tasks)
+			json.NewEncoder(w).Encode(tasks)
+			flag = true
+			return
+		}
+	}
+	if !flag {
+		json.NewEncoder(w).Encode(map[string]string{"status": "Error"})
+	}
 
 }
 func handleRoutes() {
 	router := mux.NewRouter()
 	router.HandleFunc("/", homePage).Methods("GET")
 	router.HandleFunc("/gettasks", getTasks).Methods("GET")
-	router.HandleFunc("/gettask", getTask).Methods("GET")
-	router.HandleFunc("/create", createTask).Methods("GET")
+	router.HandleFunc("/gettask/{id}", getTask).Methods("GET")
+	router.HandleFunc("/create", createTask).Methods("POST")
 	router.HandleFunc("/delete/{id}", deleteTask).Methods("DELETE")
-	router.HandleFunc("/update/{id}", updateTask).Methods("UPDATE")
+	router.HandleFunc("/update/{id}", updateTask).Methods("POST")
 	log.Fatal(http.ListenAndServe(":8082", router))
 }
+
+
+
 func main() {
 	allTasks()
 	handleRoutes()
